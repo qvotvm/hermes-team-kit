@@ -111,13 +111,14 @@ def evaluate(config, now=None, fetch=remote_usage):
         if provider.get('usage_url'):
             try:
                 usage = fetch(provider['usage_url'], os.environ.get(provider.get('api_key_env', ''), ''))
-                cap, spend = numeric(usage['daily_cap_usd']), numeric(usage['spent_usd'])
+                reply_cap, reply_spend = numeric(usage['daily_cap_usd']), numeric(usage['spent_usd'])
                 reset_time = datetime.fromisoformat(usage['reset_at'].replace('Z', '+00:00'))
                 if reset_time.tzinfo is None:
                     raise ValueError('usage reset needs a timezone')
-                group_reset = reset_time.timestamp()
-                if group_reset <= now:
+                if reset_time.timestamp() <= now:
                     raise ValueError('stale usage reply')
+                # Only a reply that passed every check replaces the ledger figures.
+                cap, spend, group_reset = reply_cap, reply_spend, reset_time.timestamp()
                 source, unknown = 'endpoint', False
             except (OSError, ValueError, KeyError, TypeError):
                 source = 'ledger-fallback'

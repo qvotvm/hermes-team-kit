@@ -39,6 +39,16 @@ class BreakerTest(unittest.TestCase):
         self.assertTrue(row['paused'])
         self.assertEqual(row['source'], 'ledger-fallback')
 
+    def test_stale_endpoint_reply_falls_back_to_ledger_figures(self):
+        self.config['provider'] = {'usage_url': 'https://example.com/usage', 'api_key_env': 'TEST_KEY'}
+        self.spend(9)
+        def stale(url, key):
+            return {'daily_cap_usd': 100, 'spent_usd': 0, 'reset_at': '1970-01-01T00:00:00Z'}
+        row = evaluate(self.config, 200, stale)['groups']['A']
+        self.assertEqual(row['source'], 'ledger-fallback')
+        self.assertEqual((row['daily_cap_usd'], row['spent_usd']), (10, 9))
+        self.assertTrue(row['paused'])
+
     def test_unknown_local_cost_pauses_capped_group(self):
         self.spend(None)
         self.assertTrue(evaluate(self.config, 200)['groups']['A']['paused'])
