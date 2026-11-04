@@ -64,6 +64,14 @@ mode. Adjust systemd `User`, directory permissions and writable paths accordingl
 The supplied root script intentionally installs the convenience single-user
 units; it does not claim to establish this stronger isolation.
 
+## Availability
+
+"The hosted MCP allows 60 calls a minute per client address at its door, with or
+without a key." Every profile on the same host shares this limit. Research
+calls from one profile can exhaust availability for the others.
+REST allows 120 calls a minute per address without a key; A2A allows 60 calls
+a minute.
+
 ## Budget and accounting
 
 Ledger events are local records, not provider invoices. Missing costs are

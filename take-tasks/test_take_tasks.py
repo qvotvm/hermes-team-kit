@@ -24,8 +24,8 @@ class SeatsTest(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         tt = self.tt = load()
         tt.BELL_HOUR = 20
-        tt.SEAT_GROUPS = {"A": (1, ("scoutx", "scoutweb")), "B": (2, ("judge", "analyst")),
-                          "C": (3, ("research1", "research2", "research3")), "D": (4, ("builder", "tester")),
+        tt.SEAT_GROUPS = {"A": (1, ("social", "scout")), "B": (2, ("judge", "reviewer")),
+                          "C": (3, ("researcher", "investigator", "verifier")), "D": (4, ("builder", "tester")),
                           "E": (5, ("writer",))}
         tt.SEAT_OF = {p: g for g, (_, ps) in tt.SEAT_GROUPS.items() for p in ps}
         tt.GATE_DIR = os.path.join(self.tmp, "gate")
@@ -85,7 +85,7 @@ class SeatsTest(unittest.TestCase):
 
     def walled(self, profile, ended=NOW - 300):
         return {"profile": profile, "outcome": "rate_limited", "ended_at": ended,
-                "error": "pid 1 exited rate-limited (quota wall) — requeued without counting a failure"}
+                "error": "pid 1 exited rate-limited (quota wall): requeued without counting a failure"}
 
     def task(self, tid, text):
         with open(os.path.join(self.tt.GATE_DIR, "tasks", tid + ".json"), "w") as f:
@@ -96,23 +96,23 @@ class SeatsTest(unittest.TestCase):
 
     def test_quota_wall_card_moves_to_richest_seat(self):
         self.usd["B"] = 5.0                               # balance back above floor, but B walled this card tonight
-        err = "pid 2 exited rate-limited (quota wall) — requeued without counting a failure"
-        self.card("t_a", "analyst", [self.walled("analyst")], err)
-        self.card("t_old", "analyst", [self.walled("analyst", ended=BELL - 60)], err)   # walled before the bell
-        self.card("t_ok", "scoutweb")
+        err = "pid 2 exited rate-limited (quota wall): requeued without counting a failure"
+        self.card("t_a", "reviewer", [self.walled("reviewer")], err)
+        self.card("t_old", "reviewer", [self.walled("reviewer", ended=BELL - 60)], err)   # walled before the bell
+        self.card("t_ok", "scout")
         self.tt.rebalance(self.tt.seats(NOW), NOW)
-        self.assertEqual(self.moves(), [("t_a", "tester")])      # research order: research1 C empty, analyst walled
+        self.assertEqual(self.moves(), [("t_a", "tester")])      # research order: researcher C empty, reviewer walled
         self.assertIn(("comment", "t_a", "переназначено: место 2 пустое", "--author", "take-tasks"), self.calls)
-        self.assertTrue(any("t_a seat 2 empty: analyst -> tester" in m for m in self.logs))
+        self.assertTrue(any("t_a seat 2 empty: reviewer -> tester" in m for m in self.logs))
 
     def test_english_rebalance_comment(self):
         self.tt.LOCALE = "en"
-        self.card("t_a", "analyst")
+        self.card("t_a", "reviewer")
         self.tt.rebalance(self.tt.seats(NOW), NOW)
         self.assertIn(("comment", "t_a", "reassigned: seat 2 empty", "--author", "take-tasks"), self.calls)
 
     def test_empty_seat_card_moves_and_keeps_kind(self):
-        self.card("t_j", "judge")                        # B empty: judge -> writer, analyst
+        self.card("t_j", "judge")                        # B empty: judge -> writer, reviewer
         self.card("t_r", "writer", [self.walled("judge"), {"profile": "writer", "outcome": "rate_limited",
                                                            "ended_at": NOW - 60}], "rate-limited")
         self.usd["E"] = 0.1                              # E empty too: judge kind has no seat left in its list
@@ -120,20 +120,20 @@ class SeatsTest(unittest.TestCase):
         self.assertEqual(self.moves(), [("t_j", "tester"), ("t_r", "tester")])   # any profile with budget, D richest
 
     def test_new_task_skips_empty_seat(self):
-        self.task("20261006-2200-aaaa", "@analyst разбор цифр topic")
+        self.task("20261006-2200-aaaa", "@reviewer разбор цифр topic")
         self.task("20261006-2201-bbbb", "почини скрипт")
         self.task("20261006-2202-cccc", "напиши пост")
         self.usd["D"] = 0.29                             # under the soft floor
         self.run_main()
-        self.assertEqual([a["--assignee"] for _, a in self.created], ["scoutweb", "scoutweb", "writer"])
+        self.assertEqual([a["--assignee"] for _, a in self.created], ["scout", "scout", "writer"])
         self.assertEqual(self.created[0][1]["--max-runtime"], "45m")
         with open(os.path.join(self.tt.OUT_DIR, "20261006-2200-aaaa.role")) as f:
-            self.assertEqual(f.read().strip(), "scoutweb")
+            self.assertEqual(f.read().strip(), "scout")
 
     def test_all_seats_empty_is_noop(self):
         for g in self.usd:
             self.usd[g] = 0.0
-        self.card("t_a", "analyst", [self.walled("analyst")], "rate-limited (quota wall)")
+        self.card("t_a", "reviewer", [self.walled("reviewer")], "rate-limited (quota wall)")
         self.task("20261006-2200-aaaa", "почини скрипт")
         self.run_main()
         self.assertEqual(self.moves(), [])
@@ -151,20 +151,20 @@ class SeatsTest(unittest.TestCase):
         self.assertEqual(len(self.balance_calls), 10)
         with open(os.path.join(self.tt.OUT_ROOT, "seats.json")) as f:
             s = json.load(f)
-        self.assertEqual(s["groups"]["B"], {"seat": 2, "profiles": ["judge", "analyst"], "usd": 0.0, "empty": True})
+        self.assertEqual(s["groups"]["B"], {"seat": 2, "profiles": ["judge", "reviewer"], "usd": 0.0, "empty": True})
         self.assertEqual(s["groups"]["D"]["empty"], False)
         self.assertNotIn("key-", json.dumps(s))
         self.assertEqual(oct(os.stat(os.path.join(self.tt.OUT_ROOT, "seats.json")).st_mode & 0o777), "0o644")
 
     def test_no_keys_dir_changes_nothing(self):
         shutil.rmtree(self.tt.KEYS_DIR)
-        self.card("t_a", "analyst", [self.walled("analyst")], "rate-limited")
-        self.task("20261006-2200-aaaa", "@analyst x y z")
+        self.card("t_a", "reviewer", [self.walled("reviewer")], "rate-limited")
+        self.task("20261006-2200-aaaa", "@reviewer x y z")
         self.run_main()
         self.assertEqual(self.balance_calls, [])
         self.assertEqual(self.moves(), [])
         self.assertFalse([a for a in self.calls if a[0] == "list"])
-        self.assertEqual(self.created[0][1]["--assignee"], "analyst")
+        self.assertEqual(self.created[0][1]["--assignee"], "reviewer")
 
     def test_last_bell(self):
         self.assertEqual(self.tt.last_bell(NOW), BELL)

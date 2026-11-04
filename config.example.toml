@@ -7,6 +7,8 @@ locale = "en"
 deny_words = []
 
 [paths]
+# Default base is /var/lib/hermes-team; explicit paths override derived subpaths.
+base = "var"
 gate = "var/gate"
 out = "var/out"
 work = "var/work/tasks"
@@ -44,20 +46,21 @@ model = ""
 [mcp.hey]
 enabled = false
 url = "https://heyresearch.xyz/mcp/research"
+# your product name, e.g. acme-desk/1.0
 integration = ""
-profiles = ["scoutweb", "research1", "research2", "research3", "analyst"]
+profiles = ["scout", "researcher", "investigator", "verifier", "reviewer"]
 
 # An uncapped key needs no seats. A capped key can serve any group of profiles.
 [seats.A]
-profiles = ["scoutx", "scoutweb"]
+profiles = ["social", "scout"]
 api_key_env = "MODEL_API_KEY"
 daily_cap_usd = 10.0
 [seats.B]
-profiles = ["judge", "analyst"]
+profiles = ["judge", "reviewer"]
 api_key_env = "MODEL_API_KEY_B"
 daily_cap_usd = 10.0
 [seats.C]
-profiles = ["research1", "research2", "research3"]
+profiles = ["researcher", "investigator", "verifier"]
 api_key_env = "MODEL_API_KEY_C"
 daily_cap_usd = 10.0
 [seats.D]

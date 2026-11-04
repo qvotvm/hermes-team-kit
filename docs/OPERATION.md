@@ -48,9 +48,19 @@ English; set `telegram.locale = "ru"` to use the preserved Russian UI.
 
 HEY Research Lab provides read-only tools for chain project research over
 Streamable HTTP, with no account or API key. The default research endpoint,
-`https://heyresearch.xyz/mcp/research`, exposes eight research tools. The full
-endpoint, `https://heyresearch.xyz/mcp`, exposes fourteen tools including token
-market tools.
+`https://heyresearch.xyz/mcp/research`, returns eight tools from `tools/list`:
+`research_answer`, `find_projects`, `get_changes`, `get_project_timeline`,
+`explain_fact`, `get_evidence`, `get_contract` and `get_v4_hook`.
+The full endpoint, `https://heyresearch.xyz/mcp`, returns fourteen tools:
+the eight above plus `get_project_snapshot`, `get_token_market`, `project_diff`,
+`ask_hey`, `chain_overview` and `market_integrity`. These lists are what
+`tools/list` returned on 5 November 2026 (server `hey-research 0.3.2`); HEY's
+documentation text may lag. Neither endpoint has write tools.
+
+"The hosted MCP allows 60 calls a minute per client address at its door, with or
+without a key." Every profile on the same host shares this limit.
+REST allows 120 calls a minute per address without a key; A2A allows 60 calls
+a minute.
 
 Set `mcp.hey.enabled = true` in `config.toml`, choose the profile names in
 `mcp.hey.profiles`, and run the installer again. Only those profiles receive
@@ -58,10 +68,29 @@ the server configuration. Manually edited profile configs remain preserved;
 add the server there yourself if needed. Set `enabled = false` and rerun the
 installer to remove it from unmodified generated configs.
 
-The optional `mcp.hey.integration` value must contain 1 to 40 lowercase letters,
-digits or hyphens. When set, it is sent as the `x-hey-integration` header:
-calls are counted under that name and answers link with attribution. Leave
-it empty to omit the header. No model credentials are sent in that header.
+The optional `mcp.hey.integration` value is a self-declaration in `name/version`
+format, with the version optional, for example `acme-desk` or `acme-desk/1.0`.
+The name contains 1 to 40 characters and the version 1 to 20: lowercase ASCII
+letters, digits, `.`, `_` or `-`, starting each part with a letter or digit.
+Names starting with `hey-` and the example names `your-product`, `my-product`
+and `my-agent` are reserved and rejected, with or without a version.
+Leave the value empty to omit the header.
+HEY documents "an `x-hey-integration: <name>/<version>` header on REST and A2A",
+for example `<your-agent>/1.0`: "a self-declaration, never an identity" that
+"changes nothing HEY answers". The installer sends the header in the MCP server
+entry when configured; hosted `/mcp` carries it onto HEY's API log row.
+HEY counts MCP agent clients by the `clientInfo.name` declared by the MCP client,
+not by the header. A name without a HEY key is observed but never counted as
+a partner.
+
+## Runtime paths
+
+Set `paths.base` to choose the shared runtime base directory. Its default is
+`/var/lib/hermes-team`; gate state, output, workspaces, keys, ledger and cookies
+use `gate/`, `out/`, `work/tasks/`, `keys/`, `ledger.jsonl` and `cookies/` under
+that base. Individual `paths` entries override these defaults. Relative paths
+resolve against the config file. The example keeps runtime data under `var/`
+for local installation. Adjust service writable paths when relocating it.
 
 ## Locale support
 

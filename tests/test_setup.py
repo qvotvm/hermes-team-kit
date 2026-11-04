@@ -44,7 +44,7 @@ class SetupTest(unittest.TestCase):
 
     def hey(self, integration=''):
         return ('[mcp.hey]\nenabled=true\nurl="https://heyresearch.xyz/mcp/research"\n'
-                'profiles=["scoutweb", "analyst"]\nintegration=' + json.dumps(integration) + '\n')
+                'profiles=["scout", "reviewer"]\nintegration=' + json.dumps(integration) + '\n')
 
     def test_absent_and_disabled_configs_are_byte_identical_to_baseline(self):
         absent = self.run_setup()
@@ -55,7 +55,7 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(disabled, absent)
 
     def test_only_selected_profiles_receive_exact_server_settings(self):
-        for integration in ('', 'research-kit-1', 'a' * 40):
+        for integration in ('', 'acme-desk', 'acme-desk/1.0', 'a' * 40 + '/1.2.3'):
             with self.subTest(integration=integration):
                 generated = self.run_setup(self.hey(integration) +
                     'timeout=999\napi_key="unrelated-test-value"\n'
@@ -66,7 +66,7 @@ class SetupTest(unittest.TestCase):
                     server['headers'] = {'x-hey-integration': integration}
                 for profile, value in generated.items():
                     expected = json.loads(self.baseline)
-                    if profile in ('scoutweb', 'analyst'):
+                    if profile in ('scout', 'reviewer'):
                         expected['mcp_servers'] = {'hey': server}
                     self.assertEqual(json.loads(value), expected)
                     self.assertEqual((self.root / 'home/profiles' / profile / '.env').read_text(),
@@ -74,12 +74,17 @@ class SetupTest(unittest.TestCase):
 
     def test_managed_configs_refresh_and_manual_edits_are_preserved(self):
         self.run_setup()
-        path = self.root / 'home/profiles/analyst/config.yaml'
+        path = self.root / 'home/profiles/reviewer/config.yaml'
         customized = path.read_bytes() + b'\n'
         path.write_bytes(customized)
+        generated = self.run_setup(self.hey('acme-desk/1.0'))
+        self.assertEqual(generated['reviewer'], customized)
+        self.assertIn('mcp_servers', json.loads(generated['scout']))
+        self.assertEqual(json.loads(generated['scout'])['mcp_servers']['hey']['headers'],
+                         {'x-hey-integration': 'acme-desk/1.0'})
         generated = self.run_setup(self.hey())
-        self.assertEqual(generated['analyst'], customized)
-        self.assertIn('mcp_servers', json.loads(generated['scoutweb']))
+        self.assertNotIn('headers', json.loads(generated['scout'])['mcp_servers']['hey'])
+        self.assertEqual(generated['reviewer'], customized)
         generated = self.run_setup('[mcp.hey]\nenabled=false\n')
-        self.assertEqual(generated['analyst'], customized)
-        self.assertEqual(generated['scoutweb'], self.baseline)
+        self.assertEqual(generated['reviewer'], customized)
+        self.assertEqual(generated['scout'], self.baseline)

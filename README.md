@@ -18,7 +18,7 @@ flowchart TD
     owner[Owner] --> gate["Telegram gate: ok / no / hold, single-use nonces"]
     gate --> dispatcher[Dispatcher]
     dispatcher --> cards[Hermes kanban cards]
-    cards --> profiles["Profiles: scoutx, scoutweb, research1-3, analyst, judge, writer, builder, tester"]
+    cards --> profiles["Profiles: social, scout, researcher, investigator, verifier, reviewer, judge, writer, builder, tester"]
     profiles --> handoff[handoff.md]
     handoff --> report[Report back to gate]
     report --> ledger[Ledger]

@@ -129,7 +129,7 @@ class BreakerTest(unittest.TestCase):
         self.assertFalse(evaluate(self.config, 200)['tripped'])
         self.config['limits']['hourly_usd'] = 5
         self.assertEqual(evaluate(self.config, 200)['reason'], 'hourly cap')
-        trip(self.config, 'analyst', 'review needed', 201)
+        trip(self.config, 'reviewer', 'review needed', 201)
         self.assertEqual(evaluate(self.config, 3700)['reason'], 'manual stop')
         reset_manual(self.config, 42, 'review complete', 3701)
         self.assertFalse(evaluate(self.config, 3702)['tripped'])

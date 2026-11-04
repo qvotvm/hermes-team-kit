@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Turn owner tasks from the gate into Hermes kanban cards.
 
-Runs as user agents, no root, no model calls. For each /srv/gate/tasks/<id>.json
-without /srv/agents/out/tasks/<id>.state it creates one card assigned by keyword
+Runs as the Hermes user, no root, no model calls. For each <paths.gate>/tasks/<id>.json
+without <paths.out>/tasks/<id>.state it creates one card assigned by keyword
 routing, then writes the state file `taken`. Open cards are synced from the board
-to `taken`, `blocked` or `done`. Does nothing at all while /srv/gate/PAUSE exists.
+to `taken`, `blocked` or `done`. Does nothing at all while <paths.gate>/PAUSE exists.
 
 Routing, first match wins:
   1. text starts with @<profile> (one of PROFILES) -> that profile, prefix dropped
@@ -12,12 +12,12 @@ Routing, first match wins:
      function, код, скрипт, баг, почин, собер, реализ, рефактор) -> builder
   3. text words (write, draft, post, tweet, reply, thread, copy, rewrite, bio,
      translate, напиш, пост, текст, черновик, твит, реплай, перевед, перепиш) -> writer
-  4. anything else -> scoutweb (research)
+  4. anything else -> scout (research)
 
 Guest tasks (kind "ref", from GUEST_TG_IDS through the gate) run one entry of the gate's
 GUEST_CMDS: the task file names the command, its profile and its prompt; the card wraps the
 prompt in the guest framing (outsider, Russian sections only, nothing about us), 30 min.
-A file without a prompt is an older ref: analyst with REF_PROMPT. Their report proposal
+A file without a prompt is an older ref: reviewer with REF_PROMPT. Their report proposal
 carries "to": [guest], so the gate sends it only to that guest and never to the owners.
 
 Deeper tasks (the owner's 🔎 button: "parent" and "depth" 2 or 3 in the task file) go
@@ -47,43 +47,42 @@ from datetime import datetime, timedelta, timezone
 
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from kit_config import load
+from kit_config import load, runtime_paths
 CONFIG = load()
-PATHS = CONFIG.get("paths", {})
-LOCAL_VAR = Path(__file__).resolve().parents[1] / "var"
+PATHS = runtime_paths(CONFIG)
 
 from ledger import finished, append as ledger_append
 from breaker import update as breaker_update, enforce as breaker_enforce, control_lock
 LOCALE = os.environ.get("TEAM_LOCALE", CONFIG.get("telegram", {}).get("locale", "en"))
 
-GATE_DIR = os.environ.get("TAKE_GATE_DIR", PATHS.get("gate", str(LOCAL_VAR / "gate")))
-OUT_DIR = os.environ.get("TAKE_OUT_DIR", str(Path(PATHS.get("out", LOCAL_VAR / "out")) / "tasks"))
-WORK_DIR = os.environ.get("TAKE_WORK_DIR", PATHS.get("work", str(LOCAL_VAR / "work/tasks")))
+GATE_DIR = os.environ.get("TAKE_GATE_DIR", PATHS["gate"])
+OUT_DIR = os.environ.get("TAKE_OUT_DIR", str(Path(PATHS["out"]) / "tasks"))
+WORK_DIR = os.environ.get("TAKE_WORK_DIR", PATHS["work"])
 BOARD = os.environ.get("TAKE_BOARD", CONFIG.get("hermes", {}).get("board", "default"))
 HERMES = os.environ.get("TAKE_HERMES", CONFIG.get("hermes", {}).get("command", "hermes"))
-PROPOSALS = os.environ.get("TAKE_PROPOSALS_DIR", str(Path(PATHS.get("out", LOCAL_VAR / "out")) / "proposals"))
-OUT_ROOT = os.environ.get("TAKE_OUT_ROOT", PATHS.get("out", str(LOCAL_VAR / "out")))
-KEYS_DIR = os.environ.get("TAKE_KEYS_DIR", PATHS.get("keys", str(LOCAL_VAR / "keys")))
+PROPOSALS = os.environ.get("TAKE_PROPOSALS_DIR", str(Path(PATHS["out"]) / "proposals"))
+OUT_ROOT = os.environ.get("TAKE_OUT_ROOT", PATHS["out"])
+KEYS_DIR = os.environ.get("TAKE_KEYS_DIR", PATHS["keys"])
 
-PROFILES = ("scoutx", "scoutweb", "judge", "analyst", "research1", "research2",
-            "research3", "builder", "tester", "writer")
+PROFILES = ("social", "scout", "judge", "reviewer", "researcher", "investigator",
+            "verifier", "builder", "tester", "writer")
 ID_RE = re.compile(r"^\d{8}-\d{4}-[0-9a-f]{4}$")
 BUILDER_RE = re.compile(r"\b(code|coding|script|bug|fix|build|implement|refactor|tests?|repo|function|"
                         r"код|скрипт|баг|почин|собер|собрат|реализ|рефактор)", re.I)
 WRITER_RE = re.compile(r"\b(write|draft|post|tweet|reply|thread|copy|rewrite|bio|translate|"
                        r"напиш|пост|текст|черновик|твит|реплай|перевед|перепиш)", re.I)
-RUNTIME = {"analyst": "45m", "scoutweb": "45m", "builder": "30m", "writer": "30m"}
+RUNTIME = {"reviewer": "45m", "scout": "45m", "builder": "30m", "writer": "30m"}
 CARD_STATES = {"done": "done", "archived": "done", "blocked": "blocked"}
 URL_RE = re.compile(r"^https?://[a-z0-9.-]+(:\d{1,5})?([/?#][A-Za-z0-9._~:/?#\[\]@&=+%,!-]*)?$", re.I)
-COOKIES = str(LOCAL_VAR / "cookies")
+COOKIES = PATHS["cookies"]
 SUMMARY_MAX = 600
 DETAILS_MAX = 2900
 MAX_DEPTH = 3
 DEEP_TEXT_MAX = 1400
 DEEP_MARK = "\n\nуглуби: " if LOCALE == "ru" else "\n\ndeepen: "
-# a deeper look goes to another kind of eye: finders -> analyst, analyst -> judge
-DEEP_ROUTE = {"scoutx": "analyst", "scoutweb": "analyst", "research1": "analyst", "research2": "analyst",
-              "research3": "analyst", "analyst": "judge", "judge": "analyst", "builder": "tester",
+# a deeper look goes to another kind of eye: finders -> reviewer, reviewer -> judge
+DEEP_ROUTE = {"social": "reviewer", "scout": "reviewer", "researcher": "reviewer", "investigator": "reviewer",
+              "verifier": "reviewer", "reviewer": "judge", "judge": "reviewer", "builder": "tester",
               "tester": "builder", "writer": "judge"}
 SENT_END = re.compile(r"[.!?…](?=\s)|\n")
 LEGACY_RE = re.compile(r"^report-(\d{8}-\d{4}-[0-9a-f]{4})\.json$")
@@ -91,13 +90,13 @@ CMD_RE = re.compile(r"^[a-z]{1,16}$")
 # Configured groups only; uncapped keys need no group definitions.
 SEAT_GROUPS = {g: (i, tuple(v["profiles"])) for i, (g, v) in enumerate(CONFIG.get("seats", {}).items(), 1)}
 SEAT_OF = {p: g for g, (_, ps) in SEAT_GROUPS.items() for p in ps}
-KIND = {"scoutx": "research", "scoutweb": "research", "research1": "research", "research2": "research",
-        "research3": "research", "analyst": "research", "builder": "code", "tester": "code",
+KIND = {"social": "research", "scout": "research", "researcher": "research", "investigator": "research",
+        "verifier": "research", "reviewer": "research", "builder": "code", "tester": "code",
         "writer": "writing", "judge": "judge"}
-FALLBACK = {"research": ("research1", "analyst", "tester", "scoutweb", "writer"), "code": ("builder", "tester"),
-            "writing": ("writer", "analyst"), "judge": ("writer", "analyst")}
-# then any profile with budget; scoutx (paid X search) never takes someone else's card
-ANY_PROFILE = ("research1", "analyst", "tester", "scoutweb", "writer", "builder", "research2", "research3", "judge")
+FALLBACK = {"research": ("researcher", "reviewer", "tester", "scout", "writer"), "code": ("builder", "tester"),
+            "writing": ("writer", "reviewer"), "judge": ("writer", "reviewer")}
+# then any profile with budget; social (paid X search) never takes someone else's card
+ANY_PROFILE = ("researcher", "reviewer", "tester", "scout", "writer", "builder", "investigator", "verifier", "judge")
 SEAT_FLOOR = 0.30
 SEAT_TTL = 600
 BELL_HOUR = CONFIG.get("limits", {}).get("reset_hour_utc", 0)
@@ -162,16 +161,16 @@ def route(text):
     m = re.match(r"@([a-z0-9]+)\s+", text)
     if m and m.group(1) in PROFILES:
         rest = text[m.end():]
-        if m.group(1) == "analyst" and VIDEO_RE.search(rest):
-            return "analyst", "Review the media and cite sources. " + rest
+        if m.group(1) == "reviewer" and VIDEO_RE.search(rest):
+            return "reviewer", "Review the media and cite sources. " + rest
         return m.group(1), rest
     if VIDEO_RE.search(text):
-        return "analyst", "Review the media and cite sources. " + text
+        return "reviewer", "Review the media and cite sources. " + text
     if BUILDER_RE.search(text):
         return "builder", text
     if WRITER_RE.search(text):
         return "writer", text
-    return "scoutweb", text
+    return "scout", text
 
 
 def last_bell(now):
@@ -274,7 +273,7 @@ def read_task(name):
                 or not isinstance(d.get("note"), str) or len(d["note"]) > 400
                 or type(d.get("reply_to")) is not int or d["reply_to"] <= 0
                 or not isinstance(cmd, str) or not CMD_RE.match(cmd)
-                or d.get("profile", "analyst") not in PROFILES
+                or d.get("profile", "reviewer") not in PROFILES
                 or not isinstance(d.get("prompt", ""), str) or len(d.get("prompt", "")) > 4000):
             raise ValueError("bad ref task file")
         if "parent" in d and (not isinstance(d["parent"], str) or not ID_RE.match(d["parent"])
@@ -341,7 +340,7 @@ def take_ref(task):
     if task["urls"]:
         with open(os.path.join(ws, "urls.txt"), "w") as f:
             f.write("\n".join(task["urls"]) + "\n")
-    role = choose(task.get("profile", "analyst"))
+    role = choose(task.get("profile", "reviewer"))
     out = hermes("create", "guest %s %s" % (task.get("cmd", "ref"), tid), "--body-file", "-", "--assignee", role,
                  "--workspace", "dir:" + ws, "--idempotency-key", "gate-" + tid,
                  "--created-by", "gate", "--max-runtime", "30m",
@@ -387,7 +386,7 @@ def last_summary(shown):
 def deep_brief(task):
     """Role, text and the extra card paragraph for a 🔎 task: the parent folders to read first."""
     parent, depth = task["parent"], task["depth"]
-    role = DEEP_ROUTE.get(parent_role(parent), "analyst")
+    role = DEEP_ROUTE.get(parent_role(parent), "reviewer")
     text = re.sub(r"^@[a-z0-9]+\s+", "", task["text"])
     folders, p = [], parent
     while p and len(folders) < MAX_DEPTH:
