@@ -71,6 +71,12 @@ def main():
             settings['custom_providers'].append({'name': 'fallback', 'base_url': fallback['base_url'],
                                                 'key_env': fallback['api_key_env'], 'model': fallback['model']})
             settings['fallback_model'] = {'provider': 'fallback', 'model': fallback['model']}
+        hey = config.get('mcp', {}).get('hey', {})
+        if hey.get('enabled', False) and template.stem in hey.get('profiles', []):
+            server = {'url': hey['url'], 'timeout': 60, 'connect_timeout': 15}
+            if hey.get('integration'):
+                server['headers'] = {'x-hey-integration': hey['integration']}
+            settings['mcp_servers'] = {'hey': server}
         seed(profile / 'SOUL.md', template.read_text().replace('{{KIT_ROOT}}', str(ROOT)).replace('{{TEAM_CONFIG}}', str(config_file)))
         managed_seed(profile / 'config.yaml', json.dumps(settings, indent=2) + '\n')
         # Only model credentials enter profiles; no bot token or owner IDs.

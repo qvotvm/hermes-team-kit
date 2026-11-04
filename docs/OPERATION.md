@@ -44,6 +44,25 @@ retrieved content remains untrusted. Guest reports contain only handoff sections
 not raw run summaries or artifact paths. UI and handoff language default to
 English; set `telegram.locale = "ru"` to use the preserved Russian UI.
 
+## HEY research MCP (optional)
+
+HEY Research Lab provides read-only tools for chain project research over
+Streamable HTTP, with no account or API key. The default research endpoint,
+`https://heyresearch.xyz/mcp/research`, exposes eight research tools. The full
+endpoint, `https://heyresearch.xyz/mcp`, exposes fourteen tools including token
+market tools.
+
+Set `mcp.hey.enabled = true` in `config.toml`, choose the profile names in
+`mcp.hey.profiles`, and run the installer again. Only those profiles receive
+the server configuration. Manually edited profile configs remain preserved;
+add the server there yourself if needed. Set `enabled = false` and rerun the
+installer to remove it from unmodified generated configs.
+
+The optional `mcp.hey.integration` value must contain 1 to 40 lowercase letters,
+digits or hyphens. When set, it is sent as the `x-hey-integration` header:
+calls are counted under that name and answers link with attribution. Leave
+it empty to omit the header. No model credentials are sent in that header.
+
 ## Locale support
 
 English is the default UI and handoff language. Set `telegram.locale = "ru"`

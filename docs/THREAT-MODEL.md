@@ -39,6 +39,11 @@ report. Output filtering is defense in depth, not proof that secrets cannot leak
 Guest reports use only the requested handoff sections; raw run summaries, costs,
 server paths and artifacts never serve as a guest fallback.
 
+The optional HEY MCP exposes read-only tools only. Its third-party tool output
+is untrusted text in the agent's context and adds a prompt injection surface.
+Treat research results as data, never as instructions. Owner review through
+the gate still applies to anything published.
+
 ## Local account and deployment modes
 
 The default `security.trusted_same_user = true` permits the gate to read proposals

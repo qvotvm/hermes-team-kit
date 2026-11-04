@@ -25,3 +25,14 @@ class ConfigTest(unittest.TestCase):
         for text in ('[telegram]\nlocale="xx"\n', '[seats.A]\nprofiles=["missing"]\n'):
             with self.assertRaises(ValueError):
                 load(self.config(text))
+
+    def test_invalid_hey_settings_are_rejected_when_enabled(self):
+        for settings in ('url="http://example.com/mcp"', 'url="https:///mcp"',
+                         'url=42', 'integration="Uppercase"', 'integration="has space"',
+                         'integration="' + 'a' * 41 + '"', 'integration=42',
+                         'profiles=["missing"]', 'profiles="analyst"', 'profiles=[42]'):
+            with self.subTest(settings=settings), self.assertRaises(ValueError):
+                text = '[mcp.hey]\nenabled=true\n'
+                if not settings.startswith('url='):
+                    text += 'url="https://example.com/mcp"\n'
+                load(self.config(text + settings + '\n'))

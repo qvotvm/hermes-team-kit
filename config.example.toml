@@ -40,6 +40,13 @@ base_url = ""
 api_key_env = "FALLBACK_API_KEY"
 model = ""
 
+# Optional read-only research endpoint; the full /mcp endpoint adds token market tools.
+[mcp.hey]
+enabled = false
+url = "https://heyresearch.xyz/mcp/research"
+integration = ""
+profiles = ["scoutweb", "research1", "research2", "research3", "analyst"]
+
 # An uncapped key needs no seats. A capped key can serve any group of profiles.
 [seats.A]
 profiles = ["scoutx", "scoutweb"]
