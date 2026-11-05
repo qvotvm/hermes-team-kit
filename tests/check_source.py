@@ -8,6 +8,10 @@ from pathlib import Path
 import re
 ROOT = Path(__file__).resolve().parents[1]
 PATTERN = re.compile(base64.b64decode('cXVvdHVtfGtpY2tlcnxlZ2dwb3B8Y2VudGltYW51c3xuaWdodGRlc2t8L1VzZXJzL3wxNjIwNjU5OTQ4fDE3NzkzNTQxOXwxODYzMjE0ODV8MTAwXC43M1wufHBheV8/dG98bnZkYXxwb25zfHJvYmluaG9vZHx2ZW5pY2V8YWdlbnRzLTF8YmtrfHN1YnNcLmpzb258MHhbMC05YS1mQS1GXXs0MH0=').decode(), re.I)
+# The public HEY integration value is intentional in these example references.
+PUBLIC_INTEGRATION = re.compile(r'(?<![\w./-])' + re.escape(
+    base64.b64decode('cXVvdHVtLzEuMA==').decode()) + r'(?![\w./-])')
+PUBLIC_FILES = {'config.example.toml', 'docs/OPERATION.md', 'tests/test_setup.py'}
 errors = []
 for file in ROOT.rglob('*'):
     relative = file.relative_to(ROOT)
@@ -20,6 +24,8 @@ for file in ROOT.rglob('*'):
     except UnicodeDecodeError:
         continue
     for number, line in enumerate(text.splitlines(), 1):
+        if relative.as_posix() in PUBLIC_FILES:
+            line = PUBLIC_INTEGRATION.sub('', line)
         if PATTERN.search(line):
             errors.append(f'{relative}:{number}: forbidden deployment reference')
 if errors:

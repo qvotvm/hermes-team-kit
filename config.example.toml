@@ -46,8 +46,9 @@ model = ""
 [mcp.hey]
 enabled = false
 url = "https://heyresearch.xyz/mcp/research"
-# your product name, e.g. acme-desk/1.0
-integration = ""
+# credits calls to this kit on HEY's Built with page;
+# set your own name/version, or "" to omit the header
+integration = "quotum/1.0"
 profiles = ["scout", "researcher", "investigator", "verifier", "reviewer"]
 
 # An uncapped key needs no seats. A capped key can serve any group of profiles.

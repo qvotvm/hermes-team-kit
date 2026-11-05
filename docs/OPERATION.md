@@ -75,13 +75,14 @@ letters, digits, `.`, `_` or `-`, starting each part with a letter or digit.
 Names starting with `hey-` and the example names `your-product`, `my-product`
 and `my-agent` are reserved and rejected, with or without a version.
 Leave the value empty to omit the header.
-HEY documents "an `x-hey-integration: <name>/<version>` header on REST and A2A",
-for example `<your-agent>/1.0`: "a self-declaration, never an identity" that
-"changes nothing HEY answers". The installer sends the header in the MCP server
-entry when configured; hosted `/mcp` carries it onto HEY's API log row.
-HEY counts MCP agent clients by the `clientInfo.name` declared by the MCP client,
-not by the header. A name without a HEY key is observed but never counted as
-a partner.
+When configured, this `name/version` header is sent on every MCP request from
+the selected profiles. HEY credits products on its Built with page by the name
+before `/` in this header, on MCP as well as REST and A2A. The example config
+sends `quotum/1.0`, which credits this kit; a team building its own product
+should set its own name. The `clientInfo.name` set by the Hermes MCP client
+feeds HEY's agent-client statistics only; the credit does not read it.
+No HEY key is needed for the credit. A free key is optional, with a monthly
+allowance and the product name on keyed calls.
 
 ## Runtime paths
 

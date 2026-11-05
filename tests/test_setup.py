@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,6 +72,23 @@ class SetupTest(unittest.TestCase):
                     self.assertEqual(json.loads(value), expected)
                     self.assertEqual((self.root / 'home/profiles' / profile / '.env').read_text(),
                                      'MODEL_API_KEY=model-test-value\n')
+
+    def test_enabled_example_config_credits_kit_for_selected_profiles(self):
+        self.base = (ROOT / 'config.example.toml').read_text().replace(
+            'enabled = false', 'enabled = true', 1).replace(
+            'command = "hermes"', 'command = ' + json.dumps(sys.executable))
+        configured = tomllib.loads(self.base)['mcp']['hey']
+        generated = self.run_setup()
+        self.assertEqual(len(generated), 10)
+        self.assertTrue(set(configured['profiles']).issubset(generated))
+        for profile, value in generated.items():
+            settings = json.loads(value)
+            if profile in configured['profiles']:
+                self.assertEqual(settings['mcp_servers']['hey'], {
+                    'url': configured['url'], 'timeout': 60, 'connect_timeout': 15,
+                    'headers': {'x-hey-integration': 'quotum/1.0'}})
+            else:
+                self.assertNotIn('mcp_servers', settings)
 
     def test_managed_configs_refresh_and_manual_edits_are_preserved(self):
         self.run_setup()
