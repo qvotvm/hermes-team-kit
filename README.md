@@ -96,9 +96,14 @@ your owner ID, and credentials for an OpenAI-compatible model provider.
 
 Edit `config.toml` and keep credentials in `service.env` or the profile `.env`
 files. The sample file documents paths, limits, seat groups and locale settings.
-Optional read-only research MCP access from
-[HEY Research Lab](https://heyresearch.xyz/developers/agents) needs no key; see
-[HEY research MCP](docs/OPERATION.md#hey-research-mcp-optional) to enable it.
+The researcher uses read-only research tools from
+[HEY Research Lab](https://heyresearch.xyz/developers/agents) by default on new
+installs from the example config, with no key. Existing `config.toml` files
+without `[mcp.hey]` keep HEY off; upgrading does not enable it. See
+[HEY research MCP](docs/OPERATION.md#hey-research-mcp) for profile selection,
+data sent to HEY and how to disable it.
+
+[Built with HEY](https://heyresearch.xyz/developers/built-with)
 
 | Key option | Configuration |
 | --- | --- |

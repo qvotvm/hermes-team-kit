@@ -75,9 +75,11 @@ class SetupTest(unittest.TestCase):
 
     def test_enabled_example_config_credits_kit_for_selected_profiles(self):
         self.base = (ROOT / 'config.example.toml').read_text().replace(
-            'enabled = false', 'enabled = true', 1).replace(
             'command = "hermes"', 'command = ' + json.dumps(sys.executable))
         configured = tomllib.loads(self.base)['mcp']['hey']
+        self.assertIs(configured['enabled'], True)
+        self.assertIn('researcher', configured['profiles'])
+        self.assertEqual(configured['url'], 'https://heyresearch.xyz/mcp/research')
         generated = self.run_setup()
         self.assertEqual(len(generated), 10)
         self.assertTrue(set(configured['profiles']).issubset(generated))

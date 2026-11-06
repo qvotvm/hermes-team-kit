@@ -44,7 +44,7 @@ retrieved content remains untrusted. Guest reports contain only handoff sections
 not raw run summaries or artifact paths. UI and handoff language default to
 English; set `telegram.locale = "ru"` to use the preserved Russian UI.
 
-## HEY research MCP (optional)
+## HEY research MCP
 
 HEY Research Lab provides read-only tools for chain project research over
 Streamable HTTP, with no account or API key. The default research endpoint,
@@ -62,11 +62,17 @@ without a key." Every profile on the same host shares this limit.
 REST allows 120 calls a minute per address without a key; A2A allows 60 calls
 a minute.
 
-Set `mcp.hey.enabled = true` in `config.toml`, choose the profile names in
-`mcp.hey.profiles`, and run the installer again. Only those profiles receive
-the server configuration. Manually edited profile configs remain preserved;
-add the server there yourself if needed. Set `enabled = false` and rerun the
-installer to remove it from unmodified generated configs.
+The example config enables HEY for the selected `mcp.hey.profiles`, including
+the researcher, on new installs. Research queries from those profiles leave
+the host for the third party at `heyresearch.xyz`. Requests also send the
+`x-hey-integration` header described below.
+
+Set `enabled = false` under `[mcp.hey]` in `config.toml` and rerun the installer
+to remove HEY from unmodified generated configs. Manually edited profile
+configs remain preserved; add or remove the server there yourself if needed.
+Existing configs without `[mcp.hey]` keep HEY off on upgrade. To enable it,
+copy the example section into `config.toml`, choose `mcp.hey.profiles` and
+rerun the installer.
 
 The optional `mcp.hey.integration` value is a self-declaration in `name/version`
 format, with the version optional, for example `acme-desk` or `acme-desk/1.0`.

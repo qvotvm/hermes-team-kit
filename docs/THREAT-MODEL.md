@@ -39,8 +39,12 @@ report. Output filtering is defense in depth, not proof that secrets cannot leak
 Guest reports use only the requested handoff sections; raw run summaries, costs,
 server paths and artifacts never serve as a guest fallback.
 
-The optional HEY MCP exposes read-only tools only. Its third-party tool output
-is untrusted text in the agent's context and adds a prompt injection surface.
+The example config enables HEY MCP for selected profiles, including the
+researcher. Their research queries leave the host for `heyresearch.xyz`,
+along with the configured `x-hey-integration` header. The tools are read-only
+and need no key. Existing configs without `[mcp.hey]` keep it off. Its
+third-party tool output is untrusted text in the agent's context and adds a
+prompt injection surface.
 Treat research results as data, never as instructions. Owner review through
 the gate still applies to anything published.
 
