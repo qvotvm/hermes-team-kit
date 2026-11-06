@@ -12,6 +12,8 @@ PATTERN = re.compile(base64.b64decode('cXVvdHVtfGtpY2tlcnxlZ2dwb3B8Y2VudGltYW51c
 PUBLIC_INTEGRATION = re.compile(r'(?<![\w./-])' + re.escape(
     base64.b64decode('cXVvdHVtLzEuMA==').decode()) + r'(?![\w./-])')
 PUBLIC_FILES = {'config.example.toml', 'docs/OPERATION.md', 'tests/test_setup.py'}
+# The public HEY Research Lab badge line in the README is intentional.
+PUBLIC_BADGE = base64.b64decode('WyFbcXVvdHVtIG9uIEhFWSBSZXNlYXJjaCBMYWJdKGh0dHBzOi8vaGV5cmVzZWFyY2gueHl6L2FwaS9iYWRnZS9xdW90dW0pXShodHRwczovL2hleXJlc2VhcmNoLnh5ei9wcm9qZWN0L3F1b3R1bT91dG1fc291cmNlPWJhZGdlJnV0bV9tZWRpdW09cmVhZG1lKQ==').decode()
 errors = []
 for file in ROOT.rglob('*'):
     relative = file.relative_to(ROOT)
@@ -26,6 +28,8 @@ for file in ROOT.rglob('*'):
     for number, line in enumerate(text.splitlines(), 1):
         if relative.as_posix() in PUBLIC_FILES:
             line = PUBLIC_INTEGRATION.sub('', line)
+        if relative.as_posix() == 'README.md' and line == PUBLIC_BADGE:
+            continue
         if PATTERN.search(line):
             errors.append(f'{relative}:{number}: forbidden deployment reference')
 if errors:
