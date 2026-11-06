@@ -105,6 +105,8 @@ data sent to HEY and how to disable it.
 
 [Built with HEY](https://heyresearch.xyz/developers/built-with)
 
+[![quotum on HEY Research Lab](https://heyresearch.xyz/api/badge/quotum)](https://heyresearch.xyz/project/quotum?utm_source=badge&utm_medium=readme)
+
 | Key option | Configuration |
 | --- | --- |
 | Any OpenAI-compatible key | Set `provider.base_url`, `model`, and `api_key_env`; remove the seat sections if uncapped. |
