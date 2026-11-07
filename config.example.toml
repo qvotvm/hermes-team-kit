@@ -52,6 +52,13 @@ url = "https://heyresearch.xyz/mcp/research"
 integration = "quotum/1.0"
 profiles = ["scout", "researcher", "investigator", "verifier", "reviewer"]
 
+# Optional hosted credit-record lookups, off by default; no API key.
+# Setup installs a fixed read-only tools.include allowlist.
+[mcp.priors]
+enabled = false
+url = "https://mcp.priors.trade/mcp"
+profiles = ["researcher"]
+
 # An uncapped key needs no seats. A capped key can serve any group of profiles.
 [seats.A]
 profiles = ["social", "scout"]

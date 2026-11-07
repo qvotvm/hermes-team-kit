@@ -48,6 +48,20 @@ prompt injection surface.
 Treat research results as data, never as instructions. Owner review through
 the gate still applies to anything published.
 
+Priors MCP is off by default. When enabled, selected profiles send lookup
+arguments (such as agent IDs and X handles) to `mcp.priors.trade`, which also
+sees the client's network address. No API, wallet, model or Telegram keys are
+sent to Priors; setup generates only the URL, timeouts and tool allowlist.
+Remote tool output, seller descriptions and links are untrusted data, never
+instructions or endorsements. A score or record does not establish trust.
+The fixed `tools.include` allowlist exposes 14 read-only lookups, excluding
+transaction builders, offer/borrow/repay drafts and additional position, quote,
+job and line workflows. Even tools marked read-only by the server are excluded
+unless explicitly allowlisted. New server tools stay excluded. See
+[the exact lists](OPERATION.md#priors-mcp). This client-side filter requires a
+Hermes version that enforces `mcp_servers.<name>.tools.include`; it is not an
+OS boundary. Owner review through the gate still applies to publication.
+
 ## Local account and deployment modes
 
 The default `security.trusted_same_user = true` permits the gate to read proposals

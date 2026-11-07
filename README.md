@@ -107,6 +107,15 @@ data sent to HEY and how to disable it.
 
 [![quotum on HEY Research Lab](https://heyresearch.xyz/api/badge/quotum)](https://heyresearch.xyz/project/quotum?utm_source=badge&utm_medium=readme)
 
+Priors is an optional hosted MCP for the Priors credit pool for AI agents on
+Robinhood Chain. Before your agent pays or trusts another agent on Robinhood Chain,
+the researcher can look up its Priors score and credit record: use
+`find_agent_by_x`, then `score_of` or `agent_record`. It is off by default,
+needs no key, and exposes only the kit's read-only lookup allowlist when enabled.
+See [Priors MCP](docs/OPERATION.md#priors-mcp) for setup and excluded tools.
+
+[Powered by Priors](https://priors.trade). Priors is an independent project.
+
 | Key option | Configuration |
 | --- | --- |
 | Any OpenAI-compatible key | Set `provider.base_url`, `model`, and `api_key_env`; remove the seat sections if uncapped. |

@@ -11,6 +11,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from kit_config import load, ROOT
 
 
+PRIORS_READ_TOOLS = (
+    "agent_record", "score_of", "credit_history", "pool_stats", "recent_activity",
+    "desk_record", "find_agent_by_x", "agent_page", "find_agents", "find_services",
+    "find_sellers", "facilitator_info", "how_to_connect", "stock_assets",
+)
+
+
 def seed(path, text, mode=0o600):
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists():
@@ -77,6 +84,11 @@ def main():
             if hey.get('integration'):
                 server['headers'] = {'x-hey-integration': hey['integration']}
             settings['mcp_servers'] = {'hey': server}
+        priors = config.get('mcp', {}).get('priors', {})
+        if priors.get('enabled', False) and template.stem in priors.get('profiles', ['researcher']):
+            settings.setdefault('mcp_servers', {})['priors'] = {
+                'url': priors['url'], 'timeout': 60, 'connect_timeout': 15,
+                'tools': {'include': list(PRIORS_READ_TOOLS)}}
         seed(profile / 'SOUL.md', template.read_text().replace('{{KIT_ROOT}}', str(ROOT)).replace('{{TEAM_CONFIG}}', str(config_file)))
         managed_seed(profile / 'config.yaml', json.dumps(settings, indent=2) + '\n')
         # Only model credentials enter profiles; no bot token or owner IDs.

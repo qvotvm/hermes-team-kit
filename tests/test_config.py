@@ -110,3 +110,13 @@ assert router.COOKIES == paths['cookies']
         result = subprocess.run([sys.executable, '-c', script], cwd=ROOT, env=env,
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_invalid_priors_settings_are_rejected_when_enabled(self):
+        for settings in ('url="http://example.com/mcp"', 'url="https:///mcp"',
+                         'url=42', 'profiles=["missing"]', 'profiles="researcher"',
+                         'profiles=[42]'):
+            with self.subTest(settings=settings), self.assertRaises(ValueError):
+                text = '[mcp.priors]\nenabled=true\n'
+                if not settings.startswith('url='):
+                    text += 'url="https://example.com/mcp"\n'
+                load(self.config(text + settings + '\n'))

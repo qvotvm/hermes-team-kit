@@ -14,6 +14,10 @@ PUBLIC_INTEGRATION = re.compile(r'(?<![\w./-])' + re.escape(
 PUBLIC_FILES = {'config.example.toml', 'docs/OPERATION.md', 'tests/test_setup.py'}
 # The public HEY Research Lab badge line in the README is intentional.
 PUBLIC_BADGE = base64.b64decode('WyFbcXVvdHVtIG9uIEhFWSBSZXNlYXJjaCBMYWJdKGh0dHBzOi8vaGV5cmVzZWFyY2gueHl6L2FwaS9iYWRnZS9xdW90dW0pXShodHRwczovL2hleXJlc2VhcmNoLnh5ei9wcm9qZWN0L3F1b3R1bT91dG1fc291cmNlPWJhZGdlJnV0bV9tZWRpdW09cmVhZG1lKQ==').decode()
+# Public Priors integration documentation and verbatim offline protocol fixtures.
+PRIORS_PUBLIC_FILES = {'README.md', 'docs/OPERATION.md',
+                       'tests/fixtures/priors/init.txt', 'tests/fixtures/priors/tools.json'}
+PRIORS_CHAIN = base64.b64decode('Um9iaW5ob29kIENoYWlu').decode()
 errors = []
 for file in ROOT.rglob('*'):
     relative = file.relative_to(ROOT)
@@ -30,6 +34,11 @@ for file in ROOT.rglob('*'):
             line = PUBLIC_INTEGRATION.sub('', line)
         if relative.as_posix() == 'README.md' and line == PUBLIC_BADGE:
             continue
+        if relative.as_posix() in PRIORS_PUBLIC_FILES:
+            line = line.replace(PRIORS_CHAIN, '')
+        if relative.as_posix() == 'tests/fixtures/priors/tools.json':
+            for encoded in ('c3BvbnNvci9iYWNrZXI=', 'Um9iaW5ob29kIHN0b2NrIHRva2Vu'):
+                line = line.replace(base64.b64decode(encoded).decode(), '')
         if PATTERN.search(line):
             errors.append(f'{relative}:{number}: forbidden deployment reference')
 if errors:

@@ -44,6 +44,14 @@ def load(path=None):
         profiles = hey.get('profiles', [])
         if not isinstance(profiles, list) or any(not isinstance(p, str) or p not in roles for p in profiles):
             raise ValueError('unknown HEY profile')
+    priors = config.get('mcp', {}).get('priors', {})
+    if priors.get('enabled', False):
+        url = priors.get('url', '')
+        if not isinstance(url, str) or urlsplit(url).scheme != 'https' or not urlsplit(url).hostname:
+            raise ValueError('Priors url must be https')
+        profiles = priors.get('profiles', ['researcher'])
+        if not isinstance(profiles, list) or any(not isinstance(p, str) or p not in roles for p in profiles):
+            raise ValueError('unknown Priors profile')
     seen = set()
     key_groups = set()
     for group in config.get('seats', {}).values():

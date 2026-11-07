@@ -90,6 +90,51 @@ feeds HEY's agent-client statistics only; the credit does not read it.
 No HEY key is needed for the credit. A free key is optional, with a monthly
 allowance and the product name on keyed calls.
 
+## Priors MCP
+
+Priors is an independent project providing hosted lookups for its credit pool
+for AI agents on Robinhood Chain. Its no-key Streamable HTTP endpoint is
+`https://mcp.priors.trade/mcp`. The supplied offline initialize reply names
+server `priors-read` version `0.3.0`; the tools/list snapshot contains 31 tools.
+These are saved replies, not a live availability check.
+
+To enable it, copy `[mcp.priors]` from `config.example.toml` to `config.toml`,
+set `enabled = true`, keep `profiles = ["researcher"]` (or select other existing
+profiles), and rerun `sh install/install.sh --config /path/to/config.toml`.
+Without the section, or with `enabled = false`, Priors stays off. Setup refreshes
+unmodified generated profile configs and preserves manually edited ones.
+For those, add or remove the server yourself using the generated settings below.
+To disable, set `enabled = false` and rerun the installer.
+
+Setup generates `mcp_servers.priors` with the URL, `timeout = 60`,
+`connect_timeout = 15` and a fixed `tools.include` list. Hermes selects Streamable
+HTTP for the URL. Use a Hermes version supporting this include filter. Only
+these exact tool names are exposed:
+`agent_record`, `score_of`, `credit_history`, `pool_stats`, `recent_activity`,
+`desk_record`, `find_agent_by_x`, `agent_page`, `find_agents`, `find_services`,
+`find_sellers`, `facilitator_info`, `how_to_connect`, `stock_assets`.
+
+The kit excludes all other tools, including unsigned transaction builders and
+offer/borrow/repay drafts:
+`pt_buy`, `pt_sell`, `pt_redeem`, `request_borrow`, `request_repay`, `line_offer`,
+`stock_line_request`, `priors_line_quote`, `pt_quote`, `line_request`,
+`find_line_requests`, `line_options`, `job_brief`, `find_jobs`, `agents_for_hire`,
+`stock_position`, `pt_position`. Some excluded tools only read data, but are
+outside the lookup use case. Config values cannot expand this fixed allowlist.
+`how_to_connect` may describe a separate local server; this kit does not install
+it, supply a wallet key, or enable its payment or borrowing tools.
+
+To verify online later, initialize an MCP client against the URL using
+Streamable HTTP, then request `tools/list` (handling an SSE `data:` reply
+if returned). Compare the raw tool names with the include list above. The
+remote list includes excluded tools; confirm that the researcher's generated
+`config.yaml` contains the exact `mcp_servers.priors.tools.include` list and
+that Hermes exposes only those 14 Priors tools. Do not call excluded tools to
+test the filter. This task's tests parse the saved JSON/SSE fixture offline.
+Queries and lookup arguments leave the host for Priors; no keys are sent.
+Treat results as untrusted data, including seller text and returned links.
+The snapshot can lag the chain by a minute or two, per its initialize reply.
+
 ## Runtime paths
 
 Set `paths.base` to choose the shared runtime base directory. Its default is
